@@ -6,6 +6,11 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
+/**
+ * @title NFT English Auction
+ * @notice Rareskills beginner solidity projects list
+ * @author Zurab Anchabadze (https://x.com/anchabadze)
+ */
 contract EnglishAuction is Ownable, ReentrancyGuard {
     constructor() Ownable(msg.sender) {}
 
@@ -39,15 +44,9 @@ contract EnglishAuction is Ownable, ReentrancyGuard {
     mapping(uint256 => mapping(address => uint256)) usersBids;
 
     function deposit(IERC721 nft, uint256 nftId, uint256 deadline, uint256 minPrice) external {
-        if (msg.sender != nft.ownerOf(nftId)) {
-            revert ShouldBeANFTOwner();
-        }
-        if (minPrice == 0) {
-            revert MinPriceShouldBeMoreThanZero();
-        }
-        if (deadline <= block.timestamp) {
-            revert DeadlineInThePast();
-        }
+        if (msg.sender != nft.ownerOf(nftId)) revert ShouldBeANFTOwner();
+        if (minPrice == 0) revert MinPriceShouldBeMoreThanZero();
+        if (deadline <= block.timestamp) revert DeadlineInThePast();
         nft.safeTransferFrom(msg.sender, address(this), nftId);
         auctionList[auctionCounter] = Auction({
             seller: msg.sender,
@@ -65,22 +64,15 @@ contract EnglishAuction is Ownable, ReentrancyGuard {
 
     function bid(uint256 auctionId) external payable {
         Auction storage auction = auctionList[auctionId];
-        if (auction.seller == address(0)) {
-            revert NoAuctionWithThisId();
-        }
-        if (auction.completed == true) {
-            revert AuctionFinished();
-        }
-        if (msg.value == 0) {
-            revert BidMustBeMoreThanZero();
-        }
+        if (auction.seller == address(0)) revert NoAuctionWithThisId();
+        if (auction.completed == true) revert AuctionFinished();
+        if (msg.value == 0) revert BidMustBeMoreThanZero();
 
         uint256 currentUserBid = usersBids[auctionId][msg.sender];
         uint256 newUserBid = currentUserBid + msg.value;
 
-        if (auction.highestBid >= newUserBid) {
-            revert BidIsTooLow();
-        }
+        if (auction.highestBid >= newUserBid) revert BidIsTooLow();
+
         auction.highestBid = newUserBid;
         auction.highestBidder = msg.sender;
         usersBids[auctionId][msg.sender] += msg.value;
@@ -88,16 +80,12 @@ contract EnglishAuction is Ownable, ReentrancyGuard {
 
     function withdraw(uint256 auctionId) external nonReentrant {
         Auction storage auction = auctionList[auctionId];
-        if (auction.seller == address(0)) {
-            revert NoAuctionWithThisId();
-        }
-        if (auction.highestBidder == msg.sender) {
-            revert HighestBidderCantWithdraw();
-        }
+        if (auction.seller == address(0)) revert NoAuctionWithThisId();
+        if (auction.highestBidder == msg.sender) revert HighestBidderCantWithdraw();
+
         uint256 amount = usersBids[auctionId][msg.sender];
-        if (amount == 0) {
-            revert NoBidsForThisAuction();
-        }
+        if (amount == 0) revert NoBidsForThisAuction();
+
         delete usersBids[auctionId][msg.sender];
         (bool sent,) = payable(msg.sender).call{value: amount}("");
         require(sent, "transfer failed");
@@ -105,20 +93,14 @@ contract EnglishAuction is Ownable, ReentrancyGuard {
 
     function endAuction(uint256 auctionId) external {
         Auction storage auction = auctionList[auctionId];
-        if (auction.seller == address(0)) {
-            revert NoAuctionWithThisId();
-        }
-        if (auction.deadline > block.timestamp) {
-            revert AuctionIsNotFinished();
-        }
+        if (auction.seller == address(0)) revert NoAuctionWithThisId();
+        if (auction.deadline > block.timestamp) revert AuctionIsNotFinished();
+
         bool completed = auction.completed;
-        if (completed) {
-            revert AuctionIsAlreadyCompleted();
-        }
+        if (completed) revert AuctionIsAlreadyCompleted();
+
         address seller = auction.seller;
-        if (msg.sender != owner() && msg.sender != seller) {
-            revert OnlySellerOrOwnerCanEndAuction();
-        }
+        if (msg.sender != owner() && msg.sender != seller) revert OnlySellerOrOwnerCanEndAuction();
 
         uint256 amount = auction.highestBid;
         uint256 minPrice = auction.minPrice;
