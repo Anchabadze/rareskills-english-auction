@@ -99,7 +99,7 @@ contract EnglishAuction is Ownable, ReentrancyGuard {
             revert NoBidsForThisAuction();
         }
         delete usersBids[auctionId][msg.sender];
-        (bool sent,) = msg.sender.call{value: amount}("");
+        (bool sent,) = payable(msg.sender).call{value: amount}("");
         require(sent, "transfer failed");
     }
 
@@ -130,11 +130,11 @@ contract EnglishAuction is Ownable, ReentrancyGuard {
         delete usersBids[auctionId][highestBidder];
 
         if (amount < minPrice) {
-            (bool sent,) = highestBidder.call{value: amount}("");
+            (bool sent,) = payable(highestBidder).call{value: amount}("");
             require(sent, "transfer failed");
             nft.safeTransferFrom(address(this), seller, nftId);
         } else {
-            (bool sent,) = seller.call{value: amount}("");
+            (bool sent,) = payable(seller).call{value: amount}("");
             require(sent, "transfer failed");
             nft.safeTransferFrom(address(this), highestBidder, nftId);
         }
